@@ -617,29 +617,35 @@ async function initFaceMesh() {
 }
 
 // ── カメラ ──
-let facingMode = 'user';
-let cameraInstance = null;
-let currentStream  = null;
+let facingMode    = 'user';
+let currentStream = null;
+let frameLoop     = null;
+
+async function launchStream() {
+  const video = document.getElementById('video');
+  if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+  if (frameLoop) { clearInterval(frameLoop); frameLoop = null; }
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode, width:{ ideal:1280 }, height:{ ideal:720 } }
+  });
+  currentStream = stream;
+  video.srcObject = stream;
+  video.style.transform = facingMode === 'user'
+    ? 'translate(-50%,-50%) scaleX(-1)'
+    : 'translate(-50%,-50%) scaleX(1)';
+  await new Promise(r => { video.onloadedmetadata = r; });
+  await video.play();
+
+  // MediaPipeへ毎フレーム送信
+  frameLoop = setInterval(async () => {
+    if (faceMesh && video.readyState >= 2) await faceMesh.send({ image: video });
+  }, 66); // ~15fps
+}
 
 async function startCamera() {
-  const video = document.getElementById('video');
   try {
-    if (currentStream) currentStream.getTracks().forEach(t => t.stop());
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode, width:{ ideal:1280 }, height:{ ideal:720 } }
-    });
-    currentStream = stream;
-    video.srcObject = stream;
-    video.style.transform = facingMode === 'user'
-      ? 'translate(-50%,-50%) scaleX(-1)'
-      : 'translate(-50%,-50%) scaleX(1)';
-    await new Promise(r => { video.onloadedmetadata = r; });
-    await video.play();
-    if (cameraInstance) cameraInstance.stop && cameraInstance.stop();
-    cameraInstance = new Camera(video, {
-      onFrame: async () => { if (faceMesh) await faceMesh.send({ image: video }); }
-    });
-    cameraInstance.start();
+    await launchStream();
     setTimeout(() => {
       document.getElementById('splash').classList.add('hide');
       document.getElementById('step-indicator').classList.add('show');
@@ -658,9 +664,11 @@ async function toggleCamera() {
   document.getElementById('cam-toggle').style.color = facingMode === 'environment' ? '#4fffb0' : '#fff';
   faceDetected = false;
   document.getElementById('cap-btn').disabled = true;
-  const splash = document.getElementById('splash');
-  splash.style.transition = 'none';
-  await startCamera();
+  try {
+    await launchStream();
+  } catch(e) {
+    console.error('カメラ切替失敗:', e);
+  }
 }
 
 window.addEventListener('load', async () => {
