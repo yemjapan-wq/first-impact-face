@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>FIRST IMPACT FACE</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { width:100%; height:100%; overflow:hidden; background:#000; font-family:'Courier New',monospace; color:#fff; }
+
+/* ── SPLASH ── */
+#splash {
+  position:fixed; inset:0; z-index:300; background:#000;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  transition:opacity 1s ease;
+}
+#splash.hide { opacity:0; pointer-events:none; }
+.sp-lab   { font-size:9px; letter-spacing:6px; color:rgba(255,255,255,0.2); text-transform:uppercase; margin-bottom:28px; }
+.sp-main  { display:flex; flex-direction:column; align-items:center; gap:4px; margin-bottom:8px; }
+.sp-first { font-size:11px; letter-spacing:8px; color:rgba(255,255,255,0.35); text-transform:uppercase; }
+.sp-impact{ font-size:58px; font-weight:900; letter-spacing:-3px; line-height:1; color:#fff; font-family:'Courier New',monospace; }
+.sp-face  { font-size:11px; letter-spacing:8px; color:rgba(255,255,255,0.35); text-transform:uppercase; }
+.sp-rule  { width:1px; height:48px; background:linear-gradient(to bottom,transparent,rgba(255,255,255,0.3),transparent); margin:24px 0; }
+.sp-sub   { font-size:9px; letter-spacing:3px; color:rgba(255,255,255,0.2); text-align:center; line-height:2; text-transform:uppercase; }
+.sp-bar   { width:120px; height:1px; background:rgba(255,255,255,0.08); margin-top:40px; position:relative; overflow:hidden; }
+.sp-bar::after { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:#fff; animation:load 2s ease forwards 0.5s; }
+@keyframes load { to { left:100%; } }
+
+/* ── APP ── */
+#app { position:fixed; inset:0; }
+#video {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%) scaleX(-1);
+  min-width:100%; min-height:100%; width:auto; height:auto;
+  filter:brightness(1.04) contrast(0.92) saturate(1.1);
+}
+
+/* ── SCAN GRID OVERLAY ── */
+#scan-grid {
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size:40px 40px;
+  opacity:0; transition:opacity 0.5s;
+}
+#scan-grid.show { opacity:1; }
+
+/* ── FACE FRAME ── */
+#face-frame {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-58%);
+  width:200px; height:240px; pointer-events:none;
+  opacity:0; transition:opacity 0.5s;
+}
+#face-frame.show { opacity:1; }
+.ff-corner {
+  position:absolute; width:20px; height:20px;
+}
+.ff-corner.tl { top:0; left:0; border-top:1.5px solid rgba(255,255,255,0.5); border-left:1.5px solid rgba(255,255,255,0.5); }
+.ff-corner.tr { top:0; right:0; border-top:1.5px solid rgba(255,255,255,0.5); border-right:1.5px solid rgba(255,255,255,0.5); }
+.ff-corner.bl { bottom:0; left:0; border-bottom:1.5px solid rgba(255,255,255,0.5); border-left:1.5px solid rgba(255,255,255,0.5); }
+.ff-corner.br { bottom:0; right:0; border-bottom:1.5px solid rgba(255,255,255,0.5); border-right:1.5px solid rgba(255,255,255,0.5); }
+.ff-scan-line {
+  position:absolute; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.6),transparent);
+  animation:ffScan 2s linear infinite;
+}
+@keyframes ffScan {
+  0%   { top:0%; opacity:0; }
+  10%  { opacity:1; }
+  90%  { opacity:1; }
+  100% { top:100%; opacity:0; }
+}
+
+/* ── TOPBAR ── */
+#topbar {
+  position:fixed; top:0; left:0; right:0;
+  padding:52px 20px 14px;
+  background:linear-gradient(to bottom,rgba(0,0,0,0.75),transparent);
+  display:flex; align-items:center; justify-content:space-between; z-index:10;
+}
+#status-wrap { display:flex; align-items:center; gap:8px; }
+#status-dot  { width:5px; height:5px; border-radius:50%; background:#333; transition:all 0.3s; }
+#status-dot.on { background:#4fffb0; box-shadow:0 0 8px #4fffb0; }
+#status-text { font-size:8px; letter-spacing:2px; color:rgba(255,255,255,0.3); text-transform:uppercase; }
+#app-name    { font-size:11px; font-weight:700; letter-spacing:4px; text-transform:uppercase; }
+
+/* ── STEP INDICATOR ── */
+#step-indicator {
+  position:fixed; top:110px; left:50%; transform:translateX(-50%);
+  z-index:10; display:none; flex-direction:column; align-items:center; gap:10px;
+}
+#step-indicator.show { display:flex; }
+.step-dots { display:flex; gap:8px; align-items:center; }
+.step-dot  {
+  width:28px; height:3px; border-radius:2px;
+  background:rgba(255,255,255,0.15); transition:all 0.3s;
+}
+.step-dot.active   { background:#fff; }
+.step-dot.done     { background:rgba(255,255,255,0.4); }
+.step-dot.active2  { background:#4fffb0; }
+.step-dot.done2    { background:rgba(79,255,176,0.4); }
+#step-label { font-size:9px; letter-spacing:3px; color:rgba(255,255,255,0.4); text-transform:uppercase; }
+
+/* ── BOTTOM SCAN PANEL ── */
+#bottom-scan {
+  position:fixed; bottom:0; left:0; right:0;
+  padding:20px 20px 52px;
+  background:linear-gradient(to top,rgba(0,0,0,0.95) 60%,transparent);
+  z-index:10;
+}
+.scan-type-badge {
+  display:flex; align-items:center; gap:8px;
+  margin-bottom:6px;
+}
+.stb-num  { font-size:9px; letter-spacing:2px; color:rgba(255,255,255,0.25); }
+.stb-name { font-size:22px; font-weight:900; letter-spacing:2px; line-height:1; }
+.stb-name.neutral { color:#fff; }
+.stb-name.smile   { color:#4fffb0; }
+.scan-hint { font-size:10px; color:rgba(255,255,255,0.25); letter-spacing:1px; margin-bottom:18px; line-height:1.7; }
+
+#cap-btn {
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  width:100%; padding:17px; border-radius:14px; border:none;
+  font-size:14px; font-weight:700; letter-spacing:2px; cursor:pointer;
+  transition:all 0.2s; text-transform:uppercase;
+}
+#cap-btn.neutral-mode { background:#fff; color:#000; }
+#cap-btn.smile-mode   { background:#4fffb0; color:#000; }
+#cap-btn:disabled { background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.2); cursor:not-allowed; }
+#cap-btn:active:not(:disabled) { transform:scale(0.97); }
+.cap-icon { width:16px; height:16px; border-radius:50%; border:2px solid currentColor; position:relative; flex-shrink:0; }
+.cap-icon::after { content:''; position:absolute; top:50%; left:50%; width:6px; height:6px; border-radius:50%; background:currentColor; transform:translate(-50%,-50%); }
+
+/* ── PREVIEW THUMBNAIL ── */
+#preview-thumb {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  z-index:15; display:none; flex-direction:column; align-items:center; gap:16px;
+  background:rgba(0,0,0,0.92); border:1px solid rgba(255,255,255,0.1);
+  border-radius:20px; padding:24px; backdrop-filter:blur(20px);
+}
+#preview-thumb.show { display:flex; }
+.pt-label { font-size:9px; letter-spacing:3px; color:rgba(255,255,255,0.4); }
+.pt-img   { width:130px; height:130px; border-radius:14px; object-fit:cover; transform:scaleX(-1); }
+.pt-actions { display:flex; gap:10px; width:100%; }
+.pt-ok {
+  flex:1; padding:12px; border-radius:10px; border:none;
+  background:#fff; color:#000; font-size:12px; font-weight:700;
+  letter-spacing:2px; cursor:pointer; text-transform:uppercase;
+}
+.pt-ok.smile-ok { background:#4fffb0; }
+.pt-retry {
+  flex:1; padding:12px; border-radius:10px;
+  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+  color:rgba(255,255,255,0.5); font-size:12px; cursor:pointer;
+  letter-spacing:2px; text-transform:uppercase;
+}
+
+/* ── ANALYZING ── */
+#analyzing {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.9); backdrop-filter:blur(16px);
+  z-index:80; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+}
+#analyzing.show { display:flex; }
+.ana-photos { display:flex; gap:12px; margin-bottom:8px; }
+.ana-photo  { width:60px; height:60px; border-radius:10px; object-fit:cover; transform:scaleX(-1); border:1px solid rgba(255,255,255,0.1); }
+.ana-label  { font-size:8px; letter-spacing:2px; color:rgba(255,255,255,0.3); text-align:center; margin-top:4px; }
+.ana-ring   { width:40px; height:40px; border-radius:50%; border:1.5px solid rgba(255,255,255,0.08); border-top-color:#fff; animation:spin 0.85s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.ana-text   { font-size:10px; letter-spacing:4px; color:rgba(255,255,255,0.5); text-transform:uppercase; }
+.ana-sub    { font-size:8px;  letter-spacing:2px; color:rgba(255,255,255,0.2); }
+
+/* ── RESULT PANEL ── */
+#result-panel {
+  display:none; position:fixed; inset:0;
+  background:#000; z-index:70; overflow-y:auto;
+  padding:60px 20px 40px;
+}
+#result-panel.show { display:block; }
+
+.r-round-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+  border-radius:30px; padding:6px 14px; margin-bottom:20px;
+  font-size:9px; letter-spacing:3px; color:rgba(255,255,255,0.4);
+}
+.r-round-badge.round2 { border-color:rgba(79,255,176,0.3); color:#4fffb0; }
+.r-round-dot { width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,0.3); }
+.r-round-badge.round2 .r-round-dot { background:#4fffb0; }
+
+.r-photos { display:flex; gap:12px; margin-bottom:24px; }
+.r-photo-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.r-photo  { width:100%; aspect-ratio:1; border-radius:14px; object-fit:cover; transform:scaleX(-1); }
+.r-photo-lbl { font-size:8px; letter-spacing:2px; color:rgba(255,255,255,0.3); text-transform:uppercase; }
+
+/* SCORE BAR */
+.r-scores { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+.score-row { display:flex; align-items:center; gap:12px; }
+.score-name { font-size:9px; letter-spacing:2px; color:rgba(255,255,255,0.4); width:48px; flex-shrink:0; text-transform:uppercase; }
+.score-bar-wrap { flex:1; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
+.score-bar { height:100%; border-radius:2px; transition:width 1s ease; }
+.score-bar.neutral { background:#fff; }
+.score-bar.smile   { background:#4fffb0; }
+.score-num { font-size:13px; font-weight:700; width:36px; text-align:right; }
+
+.r-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:18px; margin-bottom:10px; }
+.r-card-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.r-card-dot  { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.r-card-lbl  { font-size:11px; letter-spacing:2px; color:#fff; font-weight:700; text-transform:uppercase; }
+.r-card-text { font-size:13px; color:rgba(255,255,255,0.75); line-height:1.9; }
+
+.improve-list { display:flex; flex-direction:column; gap:10px; }
+.improve-item { display:flex; gap:12px; align-items:flex-start; }
+.improve-num  { width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; flex-shrink:0; margin-top:1px; }
+.improve-text { font-size:13px; color:rgba(255,255,255,0.75); line-height:1.8; }
+
+.r-change-card { background:rgba(79,255,176,0.04); border:1px solid rgba(79,255,176,0.15); border-radius:16px; padding:18px; margin-bottom:10px; }
+.r-change-text { font-size:13px; color:rgba(79,255,176,0.85); line-height:1.9; }
+
+.r-overall { text-align:center; padding:16px; font-size:13px; color:rgba(255,255,255,0.4); letter-spacing:1px; line-height:1.8; }
+
+#rescan-btn {
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  width:100%; margin-top:16px; padding:17px; border-radius:14px; border:none;
+  background:#4fffb0; color:#000; font-size:14px; font-weight:700;
+  letter-spacing:2px; cursor:pointer; transition:all 0.2s; text-transform:uppercase;
+}
+#rescan-btn:active { transform:scale(0.97); }
+#restart-btn {
+  display:flex; align-items:center; justify-content:center;
+  width:100%; margin-top:10px; padding:14px; border-radius:14px;
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+  color:rgba(255,255,255,0.35); font-size:12px; cursor:pointer;
+  letter-spacing:2px; text-transform:uppercase;
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-lab">Expression Analysis System</div>
+  <div class="sp-main">
+    <div class="sp-first">FIRST</div>
+    <div class="sp-impact">IMPACT</div>
+    <div class="sp-face">FACE</div>
+  </div>
+  <div class="sp-rule"></div>
+  <div class="sp-sub">
+    表情心理学 × 非言語コミュニケーション<br>
+    AI EXPRESSION SCANNER
+  </div>
+  <div class="sp-bar"></div>
+</div>
+
+<!-- ANALYZING -->
+<div id="analyzing">
+  <div class="ana-photos">
+    <div>
+      <img id="ana-neutral" class="ana-photo" src="" alt="">
+      <div class="ana-label">NEUTRAL</div>
+    </div>
+    <div>
+      <img id="ana-smile" class="ana-photo" src="" alt="">
+      <div class="ana-label">SMILE</div>
+    </div>
+  </div>
+  <div class="ana-ring"></div>
+  <div class="ana-text">Analyzing</div>
+  <div class="ana-sub">表情心理学 × 印象形成分析</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="cap" style="display:none;"></canvas>
+  <div id="scan-grid"></div>
+  <div id="face-frame">
+    <div class="ff-corner tl"></div>
+    <div class="ff-corner tr"></div>
+    <div class="ff-corner bl"></div>
+    <div class="ff-corner br"></div>
+    <div class="ff-scan-line"></div>
+  </div>
+
+  <div id="topbar">
+    <div id="status-wrap">
+      <div id="status-dot"></div>
+      <div id="status-text">Searching</div>
+    </div>
+    <div id="app-name">FIF</div>
+    <div style="width:60px;"></div>
+  </div>
+
+  <div id="step-indicator">
+    <div class="step-dots">
+      <div class="step-dot" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+      <div class="step-dot" id="dot4"></div>
+    </div>
+    <div id="step-label">STEP 1 / 4</div>
+  </div>
+
+  <div id="bottom-scan">
+    <div class="scan-type-badge">
+      <span class="stb-num" id="step-num">STEP 01</span>
+    </div>
+    <div class="stb-name neutral" id="step-name">NEUTRAL FACE</div>
+    <div class="scan-hint" id="step-hint">力を抜いた自然な表情で<br>カメラを正面に向けてください</div>
+    <button id="cap-btn" class="neutral-mode" disabled onclick="capture()">
+      <div class="cap-icon"></div>
+      <span id="cap-btn-label">SCAN NEUTRAL</span>
+    </button>
+  </div>
+</div>
+
+<!-- PREVIEW THUMBNAIL -->
+<div id="preview-thumb">
+  <div class="pt-label" id="pt-label-text">NEUTRAL FACE</div>
+  <img id="pt-img" class="pt-img" src="" alt="">
+  <div class="pt-actions">
+    <button class="pt-retry" onclick="retryCapture()">RETRY</button>
+    <button class="pt-ok" id="pt-ok-btn" onclick="confirmCapture()">USE THIS</button>
+  </div>
+</div>
+
+<!-- RESULT PANEL -->
+<div id="result-panel">
+  <div class="r-round-badge" id="r-round-badge">
+    <div class="r-round-dot"></div>
+    <span id="r-round-label">ROUND 1</span>
+  </div>
+
+  <div class="r-photos">
+    <div class="r-photo-wrap">
+      <img id="r-neutral" class="r-photo" src="" alt="">
+      <div class="r-photo-lbl">Neutral</div>
+    </div>
+    <div class="r-photo-wrap">
+      <img id="r-smile" class="r-photo" src="" alt="">
+      <div class="r-photo-lbl">Smile</div>
+    </div>
+  </div>
+
+  <div class="r-scores">
+    <div class="score-row">
+      <div class="score-name">Neutral</div>
+      <div class="score-bar-wrap"><div class="score-bar neutral" id="bar-neutral" style="width:0%"></div></div>
+      <div class="score-num" id="num-neutral">—</div>
+    </div>
+    <div class="score-row">
+      <div class="score-name">Smile</div>
+      <div class="score-bar-wrap"><div class="score-bar smile" id="bar-smile" style="width:0%"></div></div>
+      <div class="score-num" id="num-smile">—</div>
+    </div>
+  </div>
+
+  <div class="r-card">
+    <div class="r-card-head"><div class="r-card-dot" style="background:#aaa;"></div><div class="r-card-lbl">真顔の印象</div></div>
+    <div class="r-card-text" id="r-neutral-imp"></div>
+  </div>
+  <div class="r-card">
+    <div class="r-card-head"><div class="r-card-dot" style="background:#4fffb0;"></div><div class="r-card-lbl">笑顔の印象</div></div>
+    <div class="r-card-text" id="r-smile-imp"></div>
+  </div>
+  <div class="r-card">
+    <div class="r-card-head"><div class="r-card-dot" style="background:#facc15;"></div><div class="r-card-lbl">ギャップ分析</div></div>
+    <div class="r-card-text" id="r-gap"></div>
+  </div>
+
+  <div id="r-change-wrap" style="display:none;">
+    <div class="r-change-card">
+      <div class="r-card-head"><div class="r-card-dot" style="background:#4fffb0;"></div><div class="r-card-lbl" style="color:#4fffb0;">変化・成長</div></div>
+      <div class="r-change-text" id="r-change"></div>
+    </div>
+  </div>
+
+  <div class="r-card">
+    <div class="r-card-head"><div class="r-card-dot" style="background:#fb923c;"></div><div class="r-card-lbl">改善ポイント</div></div>
+    <div class="improve-list">
+      <div class="improve-item"><div class="improve-num">1</div><div class="improve-text" id="r-imp1"></div></div>
+      <div class="improve-item"><div class="improve-num">2</div><div class="improve-text" id="r-imp2"></div></div>
+      <div class="improve-item"><div class="improve-num">3</div><div class="improve-text" id="r-imp3"></div></div>
+    </div>
+  </div>
+
+  <div class="r-overall" id="r-overall"></div>
+
+  <button id="rescan-btn" onclick="startRescan()">↩ アドバイスを試してもう一度</button>
+  <button id="restart-btn" onclick="restartAll()">← 最初からやり直す</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script>
+// ── 状態管理 ──
+let step         = 1;  // 1:neutral1  2:smile1  3:neutral2  4:smile2
+let faceDetected = false;
+let neutral1B64  = null;
+let smile1B64    = null;
+let neutral2B64  = null;
+let smile2B64    = null;
+let pendingB64   = null;  // プレビュー中の画像
+
+// ── ステップ設定 ──
+const STEP_CONFIG = {
+  1: { num:'STEP 01', name:'NEUTRAL FACE', nameClass:'neutral', hint:'力を抜いた自然な表情で\nカメラを正面に向けてください', btnClass:'neutral-mode', btnLabel:'SCAN NEUTRAL', ptLabel:'NEUTRAL FACE', ptOkClass:'' },
+  2: { num:'STEP 02', name:'NATURAL SMILE', nameClass:'smile', hint:'いつもの自然な笑顔を作って\nカメラを正面に向けてください', btnClass:'smile-mode', btnLabel:'SCAN SMILE', ptLabel:'NATURAL SMILE', ptOkClass:'smile-ok' },
+  3: { num:'STEP 03', name:'NEUTRAL FACE', nameClass:'neutral', hint:'アドバイスを意識しながら\n自然な真顔を作ってください', btnClass:'neutral-mode', btnLabel:'SCAN NEUTRAL', ptLabel:'NEUTRAL (2回目)', ptOkClass:'' },
+  4: { num:'STEP 04', name:'NATURAL SMILE', nameClass:'smile', hint:'アドバイスを意識した\n笑顔を見せてください', btnClass:'smile-mode', btnLabel:'SCAN SMILE', ptLabel:'SMILE (2回目)', ptOkClass:'smile-ok' }
+};
+
+function applyStep(s) {
+  const c = STEP_CONFIG[s];
+  document.getElementById('step-num').textContent   = c.num;
+  document.getElementById('step-name').textContent  = c.name;
+  document.getElementById('step-name').className    = 'stb-name ' + c.nameClass;
+  document.getElementById('step-hint').innerHTML    = c.hint.replace('\n','<br>');
+  const btn = document.getElementById('cap-btn');
+  btn.className = c.btnClass;
+  btn.disabled  = !faceDetected;
+  document.getElementById('cap-btn-label').textContent = c.btnLabel;
+
+  // ドット更新
+  const dots = ['dot1','dot2','dot3','dot4'];
+  const isRound2 = s >= 3;
+  dots.forEach((id, i) => {
+    const el  = document.getElementById(id);
+    const idx = i + 1;
+    el.className = 'step-dot';
+    if (isRound2) {
+      if (idx < s)  el.classList.add('done2');
+      if (idx === s) el.classList.add('active2');
+    } else {
+      if (idx < s)  el.classList.add('done');
+      if (idx === s) el.classList.add('active');
+    }
+  });
+
+  document.getElementById('step-label').textContent = `STEP ${s} / 4`;
+}
+
+// ── キャプチャ ──
+function capture() {
+  const video = document.getElementById('video');
+  const cap   = document.getElementById('cap');
+  cap.width   = video.videoWidth;
+  cap.height  = video.videoHeight;
+  const ctx   = cap.getContext('2d');
+  ctx.save(); ctx.scale(-1,1); ctx.drawImage(video, -cap.width, 0); ctx.restore();
+  pendingB64  = cap.toDataURL('image/jpeg', 0.85);
+
+  const c = STEP_CONFIG[step];
+  document.getElementById('pt-img').src                = pendingB64;
+  document.getElementById('pt-label-text').textContent = c.ptLabel;
+  const okBtn = document.getElementById('pt-ok-btn');
+  okBtn.className = 'pt-ok ' + c.ptOkClass;
+  document.getElementById('preview-thumb').classList.add('show');
+}
+
+function retryCapture() {
+  pendingB64 = null;
+  document.getElementById('preview-thumb').classList.remove('show');
+}
+
+function confirmCapture() {
+  document.getElementById('preview-thumb').classList.remove('show');
+
+  if      (step === 1) { neutral1B64 = pendingB64; step = 2; applyStep(2); }
+  else if (step === 2) { smile1B64   = pendingB64; runAnalysis(1); }
+  else if (step === 3) { neutral2B64 = pendingB64; step = 4; applyStep(4); }
+  else if (step === 4) { smile2B64   = pendingB64; runAnalysis(2); }
+
+  pendingB64 = null;
+}
+
+// ── AI分析 ──
+async function runAnalysis(round) {
+  document.getElementById('bottom-scan').style.display = 'none';
+  document.getElementById('step-indicator').classList.remove('show');
+  document.getElementById('scan-grid').classList.remove('show');
+  document.getElementById('face-frame').classList.remove('show');
+
+  const n = round === 1 ? neutral1B64 : neutral2B64;
+  const s = round === 1 ? smile1B64   : smile2B64;
+
+  document.getElementById('ana-neutral').src = n;
+  document.getElementById('ana-smile').src   = s;
+  document.getElementById('analyzing').classList.add('show');
+
+  try {
+    const body = round === 1
+      ? { neutralB64: n.split(',')[1], smileB64: s.split(',')[1], round: 1 }
+      : { neutralB64: neutral1B64.split(',')[1], smileB64: smile1B64.split(',')[1],
+          neutralB64_2: n.split(',')[1], smileB64_2: s.split(',')[1], round: 2 };
+
+    const res    = await fetch('/api/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const result = await res.json();
+
+    document.getElementById('analyzing').classList.remove('show');
+    showResult(result, round, n, s);
+
+  } catch(e) {
+    document.getElementById('analyzing').classList.remove('show');
+    alert('分析に失敗しました。再度お試しください。');
+    restartAll();
+    console.error(e);
+  }
+}
+
+// ── 結果表示 ──
+function showResult(r, round, nImg, sImg) {
+  const isRound2 = round === 2;
+
+  const badge = document.getElementById('r-round-badge');
+  badge.className = 'r-round-badge' + (isRound2 ? ' round2' : '');
+  document.getElementById('r-round-label').textContent = isRound2 ? 'ROUND 2 — AFTER ADVICE' : 'ROUND 1';
+
+  document.getElementById('r-neutral').src  = nImg;
+  document.getElementById('r-smile').src    = sImg;
+  document.getElementById('r-neutral-imp').textContent = r.neutral_impression || '';
+  document.getElementById('r-smile-imp').textContent   = r.smile_impression   || '';
+  document.getElementById('r-gap').textContent          = r.gap                || '';
+  document.getElementById('r-imp1').textContent         = r.improve1           || '';
+  document.getElementById('r-imp2').textContent         = r.improve2           || '';
+  document.getElementById('r-imp3').textContent         = r.improve3           || '';
+  document.getElementById('r-overall').textContent      = r.overall            || '';
+
+  // スコアバー
+  const sn = Math.min(100, Math.max(0, r.score_neutral || 0));
+  const ss = Math.min(100, Math.max(0, r.score_smile   || 0));
+  document.getElementById('num-neutral').textContent = sn + '点';
+  document.getElementById('num-smile').textContent   = ss + '点';
+  setTimeout(() => {
+    document.getElementById('bar-neutral').style.width = sn + '%';
+    document.getElementById('bar-smile').style.width   = ss + '%';
+  }, 200);
+
+  // 変化カード（round2のみ）
+  const changeWrap = document.getElementById('r-change-wrap');
+  if (isRound2 && r.change) {
+    document.getElementById('r-change').textContent = r.change;
+    changeWrap.style.display = 'block';
+    document.getElementById('rescan-btn').style.display = 'none';
+  } else {
+    changeWrap.style.display = 'none';
+    document.getElementById('rescan-btn').style.display = 'flex';
+  }
+
+  document.getElementById('result-panel').classList.add('show');
+}
+
+// ── 2回目スキャン ──
+function startRescan() {
+  document.getElementById('result-panel').classList.remove('show');
+  document.getElementById('bar-neutral').style.width = '0%';
+  document.getElementById('bar-smile').style.width   = '0%';
+  step = 3;
+  applyStep(3);
+  document.getElementById('bottom-scan').style.display = 'block';
+  document.getElementById('step-indicator').classList.add('show');
+  document.getElementById('scan-grid').classList.add('show');
+  document.getElementById('face-frame').classList.add('show');
+}
+
+// ── リスタート ──
+function restartAll() {
+  document.getElementById('result-panel').classList.remove('show');
+  document.getElementById('bar-neutral').style.width = '0%';
+  document.getElementById('bar-smile').style.width   = '0%';
+  neutral1B64 = null; smile1B64 = null; neutral2B64 = null; smile2B64 = null;
+  step = 1;
+  applyStep(1);
+  document.getElementById('bottom-scan').style.display = 'block';
+  document.getElementById('step-indicator').classList.add('show');
+  document.getElementById('scan-grid').classList.add('show');
+  document.getElementById('face-frame').classList.add('show');
+}
+
+// ── MediaPipe ──
+let faceMesh = null;
+
+async function initFaceMesh() {
+  faceMesh = new FaceMesh({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}` });
+  faceMesh.setOptions({ maxNumFaces:1, refineLandmarks:false, minDetectionConfidence:0.5, minTrackingConfidence:0.5 });
+  faceMesh.onResults(results => {
+    const detected = results.multiFaceLandmarks?.length > 0;
+    const dot  = document.getElementById('status-dot');
+    const txt  = document.getElementById('status-text');
+    const btn  = document.getElementById('cap-btn');
+
+    if (detected !== faceDetected) {
+      faceDetected = detected;
+      if (detected) {
+        dot.classList.add('on'); txt.textContent = 'Face Detected';
+        if (!document.getElementById('preview-thumb').classList.contains('show') &&
+            !document.getElementById('analyzing').classList.contains('show') &&
+            !document.getElementById('result-panel').classList.contains('show')) {
+          btn.disabled = false;
+        }
+      } else {
+        dot.classList.remove('on'); txt.textContent = 'Searching';
+        btn.disabled = true;
+      }
+    }
+  });
+}
+
+async function startCamera() {
+  const video = document.getElementById('video');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ ideal:1280 }, height:{ ideal:720 } } });
+    video.srcObject = stream;
+    await new Promise(r => { video.onloadedmetadata = r; });
+    await video.play();
+
+    const camera = new Camera(video, {
+      onFrame: async () => { if (faceMesh) await faceMesh.send({ image: video }); }
+    });
+    camera.start();
+
+    setTimeout(() => {
+      document.getElementById('splash').classList.add('hide');
+      document.getElementById('step-indicator').classList.add('show');
+      document.getElementById('scan-grid').classList.add('show');
+      document.getElementById('face-frame').classList.add('show');
+      applyStep(1);
+    }, 2400);
+
+  } catch(e) {
+    document.querySelector('.sp-sub').innerHTML = 'カメラの許可が必要です<br>設定から許可してください';
+    document.querySelector('.sp-bar').style.display = 'none';
+  }
+}
+
+window.addEventListener('load', async () => {
+  await initFaceMesh();
+  await startCamera();
+});
+</script>
+</body>
+</html>
