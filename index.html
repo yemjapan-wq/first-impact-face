@@ -85,6 +85,13 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; font-fami
 #status-dot.on { background:#4fffb0; box-shadow:0 0 8px #4fffb0; }
 #status-text { font-size:8px; letter-spacing:2px; color:rgba(255,255,255,0.3); text-transform:uppercase; }
 #app-name    { font-size:11px; font-weight:700; letter-spacing:4px; text-transform:uppercase; }
+#cam-toggle  {
+  width:44px; height:44px; border-radius:50%;
+  background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
+  color:#fff; font-size:18px; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; transition:all 0.2s;
+}
+#cam-toggle:active { background:rgba(255,255,255,0.2); transform:scale(0.92); }
 
 /* ── STEP INDICATOR ── */
 #step-indicator {
@@ -291,7 +298,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; font-fami
       <div id="status-text">Searching</div>
     </div>
     <div id="app-name">FIF</div>
-    <div style="width:60px;"></div>
+    <button id="cam-toggle" onclick="toggleCamera()">⇄</button>
   </div>
 
   <div id="step-indicator">
@@ -609,19 +616,30 @@ async function initFaceMesh() {
   });
 }
 
+// ── カメラ ──
+let facingMode = 'user';
+let cameraInstance = null;
+let currentStream  = null;
+
 async function startCamera() {
   const video = document.getElementById('video');
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ ideal:1280 }, height:{ ideal:720 } } });
+    if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode, width:{ ideal:1280 }, height:{ ideal:720 } }
+    });
+    currentStream = stream;
     video.srcObject = stream;
+    video.style.transform = facingMode === 'user'
+      ? 'translate(-50%,-50%) scaleX(-1)'
+      : 'translate(-50%,-50%) scaleX(1)';
     await new Promise(r => { video.onloadedmetadata = r; });
     await video.play();
-
-    const camera = new Camera(video, {
+    if (cameraInstance) cameraInstance.stop && cameraInstance.stop();
+    cameraInstance = new Camera(video, {
       onFrame: async () => { if (faceMesh) await faceMesh.send({ image: video }); }
     });
-    camera.start();
-
+    cameraInstance.start();
     setTimeout(() => {
       document.getElementById('splash').classList.add('hide');
       document.getElementById('step-indicator').classList.add('show');
@@ -629,11 +647,20 @@ async function startCamera() {
       document.getElementById('face-frame').classList.add('show');
       applyStep(1);
     }, 2400);
-
   } catch(e) {
     document.querySelector('.sp-sub').innerHTML = 'カメラの許可が必要です<br>設定から許可してください';
     document.querySelector('.sp-bar').style.display = 'none';
   }
+}
+
+async function toggleCamera() {
+  facingMode = facingMode === 'user' ? 'environment' : 'user';
+  document.getElementById('cam-toggle').style.color = facingMode === 'environment' ? '#4fffb0' : '#fff';
+  faceDetected = false;
+  document.getElementById('cap-btn').disabled = true;
+  const splash = document.getElementById('splash');
+  splash.style.transition = 'none';
+  await startCamera();
 }
 
 window.addEventListener('load', async () => {
