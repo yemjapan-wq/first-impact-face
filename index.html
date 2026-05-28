@@ -109,23 +109,23 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; font-fami
 .gem-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:20px; margin-bottom:12px; text-align:center; }
 .gem-emoji { font-size:40px; margin-bottom:8px; }
 .gem-type-name { font-size:18px; font-weight:900; color:#fff; letter-spacing:1px; margin-bottom:4px; }
-.gem-subtitle { font-size:10px; letter-spacing:3px; color:rgba(255,255,255,0.3); text-transform:uppercase; margin-bottom:12px; }
-.gem-tagline { font-size:13px; color:rgba(255,255,255,0.6); line-height:1.7; font-style:italic; }
+.gem-subtitle { font-size:10px; letter-spacing:3px; color:rgba(255,255,255,0.45); text-transform:uppercase; margin-bottom:12px; }
+.gem-tagline { font-size:14px; color:rgba(255,255,255,0.85); line-height:1.8; font-weight:500; }
 
 /* 印象カード */
 .r-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:18px; margin-bottom:10px; }
 .r-card-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
 .r-card-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
 .r-card-lbl { font-size:11px; letter-spacing:2px; color:#fff; font-weight:700; text-transform:uppercase; }
-.r-card-text { font-size:14px; color:rgba(255,255,255,0.8); line-height:1.8; }
-.r-shadow { font-size:12px; color:rgba(255,255,255,0.4); margin-top:8px; line-height:1.7; }
-.r-potential { font-size:13px; color:#4fffb0; margin-top:10px; line-height:1.7; font-weight:500; }
+.r-card-text { font-size:14px; color:rgba(255,255,255,0.92); line-height:1.9; }
+.r-shadow { font-size:13px; color:rgba(255,255,255,0.65); margin-top:10px; line-height:1.8; border-left:2px solid rgba(255,255,255,0.15); padding-left:10px; }
+.r-potential { font-size:14px; color:#4fffb0; margin-top:12px; line-height:1.8; font-weight:700; }
 
 /* パーツ評価 */
 .parts-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:16px; margin-bottom:12px; }
 .parts-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
 .parts-row:last-child { border-bottom:none; }
-.parts-name { font-size:11px; letter-spacing:2px; color:rgba(255,255,255,0.4); text-transform:uppercase; }
+.parts-name { font-size:12px; letter-spacing:2px; color:rgba(255,255,255,0.75); text-transform:uppercase; font-weight:600; }
 .parts-val { font-size:12px; font-weight:700; padding:4px 12px; border-radius:20px; }
 .parts-val.good { background:rgba(79,255,176,0.1); color:#4fffb0; }
 .parts-val.ok { background:rgba(250,204,21,0.1); color:#facc15; }
@@ -252,6 +252,11 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; font-fami
     <div class="r-card-text" id="r-current"></div>
     <div class="r-shadow" id="r-shadow"></div>
     <div class="r-potential" id="r-potential"></div>
+  </div>
+
+  <div class="r-card" id="r-ninso-card">
+    <div class="r-card-head"><div class="r-card-dot" style="background:#facc15;"></div><div class="r-card-lbl">人相学からひとこと</div></div>
+    <div class="r-card-text" id="r-ninso"></div>
   </div>
 
   <div class="parts-card">
@@ -437,6 +442,8 @@ function showResult(r) {
   document.getElementById('r-current').textContent  = r.current   || '';
   document.getElementById('r-shadow').textContent   = r.shadow ? `でも… ${r.shadow}` : '';
   document.getElementById('r-potential').textContent = r.potential ? `✨ ${r.potential}` : '';
+  document.getElementById('r-ninso').textContent    = r.ninso    || '';
+  document.getElementById('r-ninso-card').style.display = r.ninso ? 'block' : 'none';
   setPartVal('p-eye',   r.eye);
   setPartVal('p-brow',  r.brow);
   setPartVal('p-mouth', r.mouth);
